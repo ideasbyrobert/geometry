@@ -77,17 +77,20 @@ private struct DiagramWorkspaceView: View
             GeometryReader
             { proxy in
                 let canvasSize = CGSize(width: CGFloat(canvas.width), height: CGFloat(canvas.height))
-                let contentCenter = DiagramGeometry.contentCenter(in: canvas)
+                let contentRect = DiagramGeometry.contentRect(in: canvas)
+                let contentCenter = CGPoint(x: contentRect.midX, y: contentRect.midY)
+                let initialZoom = initialViewportZoom(contentRect: contentRect, viewportSize: proxy.size)
+                let viewportZoom = centeredCanvasID == canvas.id ? zoom : initialZoom
                 let layout = DiagramGeometry.surfaceLayout(
                     canvasSize: canvasSize,
                     viewportSize: proxy.size,
-                    zoom: zoom,
+                    zoom: viewportZoom,
                     contentCenter: contentCenter
                 )
                 let targetScrollOffset = DiagramGeometry.centeredScrollOffset(
                     surfaceSize: layout.size,
                     viewportSize: proxy.size,
-                    zoom: zoom,
+                    zoom: viewportZoom,
                     centerMarker: layout.centerMarker
                 )
 
@@ -99,15 +102,17 @@ private struct DiagramWorkspaceView: View
                             DiagramInitialScrollApplier(
                                 canvasID: canvas.id,
                                 targetOffset: targetScrollOffset,
+                                targetZoom: initialZoom,
+                                zoom: $zoom,
                                 centeredCanvasID: $centeredCanvasID
                             )
                             .frame(width: 0, height: 0)
                             .allowsHitTesting(false)
                         }
-                        .scaleEffect(zoom, anchor: .topLeading)
+                        .scaleEffect(viewportZoom, anchor: .topLeading)
                         .frame(
-                            width: layout.size.width * zoom,
-                            height: layout.size.height * zoom,
+                            width: layout.size.width * viewportZoom,
+                            height: layout.size.height * viewportZoom,
                             alignment: .topLeading
                         )
                 }
@@ -150,6 +155,19 @@ private struct DiagramWorkspaceView: View
                     .frame(height: 1)
             }
         }
+    }
+
+    private func initialViewportZoom(contentRect: CGRect, viewportSize: CGSize) -> CGFloat
+    {
+        guard !ProcessInfo.processInfo.arguments.contains("--disable-initial-fit") else
+        {
+            return 1
+        }
+
+        return DiagramGeometry.initialZoomToFit(
+            contentRect: contentRect,
+            viewportSize: viewportSize
+        )
     }
 
     private func diagramSurface(layout: DiagramGeometry.SurfaceLayout, canvasSize: CGSize) -> some View
@@ -314,6 +332,8 @@ private struct DiagramInitialScrollApplier: NSViewRepresentable
 {
     let canvasID: UUID
     let targetOffset: CGPoint
+    let targetZoom: CGFloat
+    @Binding var zoom: CGFloat
     @Binding var centeredCanvasID: UUID?
 
     func makeNSView(context: Context) -> DiagramScrollProbeView
@@ -330,6 +350,20 @@ private struct DiagramInitialScrollApplier: NSViewRepresentable
 
         guard centeredCanvasID != canvasID else
         {
+            return
+        }
+
+        guard abs(zoom - targetZoom) < 0.0005 else
+        {
+            DispatchQueue.main.async
+            {
+                guard centeredCanvasID != canvasID else
+                {
+                    return
+                }
+
+                zoom = targetZoom
+            }
             return
         }
 

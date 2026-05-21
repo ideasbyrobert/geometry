@@ -41,6 +41,51 @@ final class DiagramGeometryTests: XCTestCase
         XCTAssertEqual(size.height, 1600)
     }
 
+    func testInitialZoomKeepsFullScaleWhenContentFitsWithMargin()
+    {
+        let zoom = DiagramGeometry.initialZoomToFit(
+            contentRect: CGRect(x: 100, y: 80, width: 420, height: 260),
+            viewportSize: CGSize(width: 1000, height: 800),
+            margin: 160
+        )
+
+        XCTAssertEqual(zoom, 1)
+    }
+
+    func testInitialZoomFitsWideContentWithMargin()
+    {
+        let zoom = DiagramGeometry.initialZoomToFit(
+            contentRect: CGRect(x: 100, y: 80, width: 900, height: 260),
+            viewportSize: CGSize(width: 1000, height: 800),
+            margin: 160
+        )
+
+        XCTAssertEqual(zoom, 0.7555555555555555, accuracy: 0.0001)
+    }
+
+    func testInitialZoomFitsTallContentWithMargin()
+    {
+        let zoom = DiagramGeometry.initialZoomToFit(
+            contentRect: CGRect(x: 100, y: 80, width: 420, height: 1200),
+            viewportSize: CGSize(width: 1000, height: 800),
+            margin: 160
+        )
+
+        XCTAssertEqual(zoom, 0.4, accuracy: 0.0001)
+    }
+
+    func testInitialZoomClampsToMinimum()
+    {
+        let zoom = DiagramGeometry.initialZoomToFit(
+            contentRect: CGRect(x: 0, y: 0, width: 6000, height: 5000),
+            viewportSize: CGSize(width: 1000, height: 800),
+            margin: 160,
+            minimumZoom: 0.25
+        )
+
+        XCTAssertEqual(zoom, 0.25)
+    }
+
     func testContentCenterUsesUnionOfNodeFrames()
     {
         let first = DiagramNode(

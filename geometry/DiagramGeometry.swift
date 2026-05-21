@@ -11,6 +11,9 @@ enum DiagramGeometry
     }
 
     static let canvasExpansionMargin: CGFloat = 80
+    static let initialFitMargin: CGFloat = 160
+    static let minimumZoom: CGFloat = 0.25
+    static let maximumZoom: CGFloat = 1.8
 
     static func node(with id: UUID, in canvas: DiagramCanvas) -> DiagramNode?
     {
@@ -96,6 +99,32 @@ enum DiagramGeometry
             width: max(canvasSize.width, viewportSize.width / safeZoom),
             height: max(canvasSize.height, viewportSize.height / safeZoom)
         )
+    }
+
+    static func initialZoomToFit(
+        contentRect: CGRect,
+        viewportSize: CGSize,
+        margin: CGFloat = initialFitMargin,
+        minimumZoom: CGFloat = minimumZoom,
+        maximumZoom: CGFloat = 1
+    ) -> CGFloat
+    {
+        guard contentRect.width > 0,
+              contentRect.height > 0,
+              viewportSize.width > 0,
+              viewportSize.height > 0 else
+        {
+            return maximumZoom
+        }
+
+        let availableWidth = max(1, viewportSize.width - margin * 2)
+        let availableHeight = max(1, viewportSize.height - margin * 2)
+        let fitZoom = min(
+            availableWidth / contentRect.width,
+            availableHeight / contentRect.height
+        )
+
+        return clamp(min(fitZoom, maximumZoom), minimum: minimumZoom, maximum: maximumZoom)
     }
 
     static func contentRect(in canvas: DiagramCanvas) -> CGRect

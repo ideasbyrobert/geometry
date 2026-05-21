@@ -97,7 +97,7 @@ final class GeometryEditorUITests: XCTestCase
     private func launchApp() -> XCUIApplication
     {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitest-reset-store"]
+        app.launchArguments = ["--uitest-reset-store", "--disable-initial-fit"]
         app.launch()
         return app
     }

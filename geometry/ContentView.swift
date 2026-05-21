@@ -102,7 +102,7 @@ struct ContentView: View
             {
                 Button
                 {
-                    zoom = max(0.45, zoom - 0.1)
+                    zoom = max(DiagramGeometry.minimumZoom, zoom - 0.1)
                 }
                 label:
                 {
@@ -113,7 +113,7 @@ struct ContentView: View
 
                 Button
                 {
-                    zoom = min(1.8, zoom + 0.1)
+                    zoom = min(DiagramGeometry.maximumZoom, zoom + 0.1)
                 }
                 label:
                 {
