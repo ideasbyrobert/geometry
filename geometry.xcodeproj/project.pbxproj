@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		25133A012FBF0000005D1ABF /* Fonts in Frameworks */ = {isa = PBXBuildFile; productRef = 25133A072FBF0000005D1ABF /* Fonts */; };
+		25133A022FBF0000005D1ABF /* Colors in Frameworks */ = {isa = PBXBuildFile; productRef = 25133A082FBF0000005D1ABF /* Colors */; };
+		25133A032FBF0000005D1ABF /* Spacing in Frameworks */ = {isa = PBXBuildFile; productRef = 25133A092FBF0000005D1ABF /* Spacing */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		251339262FBEF3AE005D1ABF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +58,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				25133A012FBF0000005D1ABF /* Fonts in Frameworks */,
+				25133A022FBF0000005D1ABF /* Colors in Frameworks */,
+				25133A032FBF0000005D1ABF /* Spacing in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +121,9 @@
 			);
 			name = geometry;
 			packageProductDependencies = (
+				25133A072FBF0000005D1ABF /* Fonts */,
+				25133A082FBF0000005D1ABF /* Colors */,
+				25133A092FBF0000005D1ABF /* Spacing */,
 			);
 			productName = geometry;
 			productReference = 251339162FBEF3AD005D1ABF /* geometry.app */;
@@ -195,6 +207,11 @@
 			);
 			mainGroup = 2513390D2FBEF3AD005D1ABF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				25133A042FBF0000005D1ABF /* XCLocalSwiftPackageReference "../fonts" */,
+				25133A052FBF0000005D1ABF /* XCLocalSwiftPackageReference "../colors" */,
+				25133A062FBF0000005D1ABF /* XCLocalSwiftPackageReference "../spacing" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 251339172FBEF3AD005D1ABF /* Products */;
 			projectDirPath = "";
@@ -563,6 +580,39 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		25133A042FBF0000005D1ABF /* XCLocalSwiftPackageReference "../fonts" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../fonts;
+		};
+		25133A052FBF0000005D1ABF /* XCLocalSwiftPackageReference "../colors" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../colors;
+		};
+		25133A062FBF0000005D1ABF /* XCLocalSwiftPackageReference "../spacing" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../spacing;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		25133A072FBF0000005D1ABF /* Fonts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 25133A042FBF0000005D1ABF /* XCLocalSwiftPackageReference "../fonts" */;
+			productName = Fonts;
+		};
+		25133A082FBF0000005D1ABF /* Colors */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 25133A052FBF0000005D1ABF /* XCLocalSwiftPackageReference "../colors" */;
+			productName = Colors;
+		};
+		25133A092FBF0000005D1ABF /* Spacing */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 25133A062FBF0000005D1ABF /* XCLocalSwiftPackageReference "../spacing" */;
+			productName = Spacing;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2513390E2FBEF3AD005D1ABF /* Project object */;
 }
