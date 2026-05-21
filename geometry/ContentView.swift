@@ -263,6 +263,7 @@ struct ContentView: View
         {
             DiagramGeometry.snapState(node, in: canvas)
         }
+        DiagramGeometry.expandCanvasIfNeeded(canvas, toContain: node)
 
         selectedNodeID = node.id
         selectedEdgeID = nil

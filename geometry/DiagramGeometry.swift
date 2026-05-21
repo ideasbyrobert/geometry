@@ -3,6 +3,8 @@ import Foundation
 
 enum DiagramGeometry
 {
+    static let canvasExpansionMargin: CGFloat = 80
+
     static func node(with id: UUID, in canvas: DiagramCanvas) -> DiagramNode?
     {
         canvas.nodes.first { $0.id == id }
@@ -74,6 +76,32 @@ enum DiagramGeometry
         case .mechanism:
             return CGPoint(x: base.x + 160 + offset, y: base.y - 100 + offset)
         }
+    }
+
+    static func visibleSurfaceSize(
+        canvasSize: CGSize,
+        viewportSize: CGSize,
+        zoom: CGFloat
+    ) -> CGSize
+    {
+        let safeZoom = max(zoom, 0.001)
+        return CGSize(
+            width: max(canvasSize.width, viewportSize.width / safeZoom),
+            height: max(canvasSize.height, viewportSize.height / safeZoom)
+        )
+    }
+
+    static func expandCanvasIfNeeded(
+        _ canvas: DiagramCanvas,
+        toContain node: DiagramNode,
+        margin: CGFloat = canvasExpansionMargin
+    )
+    {
+        let requiredWidth = max(0, node.frame.maxX + margin)
+        let requiredHeight = max(0, node.frame.maxY + margin)
+
+        canvas.width = Double(max(CGFloat(canvas.width), requiredWidth))
+        canvas.height = Double(max(CGFloat(canvas.height), requiredHeight))
     }
 
     private static func perimeterPoint(on rect: CGRect, closestTo point: CGPoint) -> CGPoint

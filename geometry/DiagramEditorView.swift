@@ -72,56 +72,26 @@ private struct DiagramWorkspaceView: View
     {
         VStack(spacing: 0)
         {
-            ScrollView([.horizontal, .vertical])
-            {
-                ZStack(alignment: .topLeading)
-                {
-                    Rectangle()
-                        .fill(.white)
-                        .overlay(
-                            Rectangle()
-                                .stroke(.black.opacity(0.16), lineWidth: 1)
-                        )
-                        .gesture(
-                            SpatialTapGesture()
-                                .onEnded
-                                { value in
-                                    handleCanvasTap(at: value.location)
-                                }
-                        )
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Diagram Workspace")
-                        .accessibilityIdentifier(DiagramAccessibility.workspace)
-
-                    DiagramEdgeLayer(canvas: canvas)
-                        .allowsHitTesting(false)
-
-                    ForEach(sortedNodes)
-                    { node in
-                        DiagramNodeView(
-                            node: node,
-                            isSelected: selectedNodeID == node.id,
-                            isConnectorStart: connectorStartID == node.id,
-                            zoom: zoom,
-                            select: { handleNodeTap(node) },
-                            snapState: { DiagramGeometry.snapState(node, in: canvas) }
-                        )
-                    }
-
-                    DiagramEdgeLabelsView(
-                        canvas: canvas,
-                        selectedEdgeID: $selectedEdgeID,
-                        selectedNodeID: $selectedNodeID
-                    )
-                }
-                .frame(width: CGFloat(canvas.width), height: CGFloat(canvas.height))
-                .scaleEffect(zoom, anchor: .topLeading)
-                .frame(
-                    width: CGFloat(canvas.width) * zoom,
-                    height: CGFloat(canvas.height) * zoom,
-                    alignment: .topLeading
+            GeometryReader
+            { proxy in
+                let canvasSize = CGSize(width: CGFloat(canvas.width), height: CGFloat(canvas.height))
+                let surfaceSize = DiagramGeometry.visibleSurfaceSize(
+                    canvasSize: canvasSize,
+                    viewportSize: proxy.size,
+                    zoom: zoom
                 )
-                .padding(80)
+
+                ScrollView([.horizontal, .vertical])
+                {
+                    diagramSurface(size: surfaceSize)
+                        .scaleEffect(zoom, anchor: .topLeading)
+                        .frame(
+                            width: surfaceSize.width * zoom,
+                            height: surfaceSize.height * zoom,
+                            alignment: .topLeading
+                        )
+                }
+                .background(.white)
             }
 
             HStack(spacing: StackSpacing.standard)
@@ -158,6 +128,51 @@ private struct DiagramWorkspaceView: View
         }
     }
 
+    private func diagramSurface(size: CGSize) -> some View
+    {
+        ZStack(alignment: .topLeading)
+        {
+            Rectangle()
+                .fill(.white)
+                .overlay(
+                    Rectangle()
+                        .stroke(.black.opacity(0.16), lineWidth: 1)
+                )
+                .gesture(
+                    SpatialTapGesture()
+                        .onEnded
+                        { value in
+                            handleCanvasTap(at: value.location)
+                        }
+                )
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Diagram Workspace")
+                .accessibilityIdentifier(DiagramAccessibility.workspace)
+
+            DiagramEdgeLayer(canvas: canvas)
+                .allowsHitTesting(false)
+
+            ForEach(sortedNodes)
+            { node in
+                DiagramNodeView(
+                    node: node,
+                    isSelected: selectedNodeID == node.id,
+                    isConnectorStart: connectorStartID == node.id,
+                    zoom: zoom,
+                    select: { handleNodeTap(node) },
+                    snapState: { commitNodePosition(node) }
+                )
+            }
+
+            DiagramEdgeLabelsView(
+                canvas: canvas,
+                selectedEdgeID: $selectedEdgeID,
+                selectedNodeID: $selectedNodeID
+            )
+        }
+        .frame(width: size.width, height: size.height, alignment: .topLeading)
+    }
+
     private var sortedNodes: [DiagramNode]
     {
         canvas.nodes.sorted
@@ -169,6 +184,12 @@ private struct DiagramWorkspaceView: View
 
             return left.kind.sortOrder < right.kind.sortOrder
         }
+    }
+
+    private func commitNodePosition(_ node: DiagramNode)
+    {
+        DiagramGeometry.snapState(node, in: canvas)
+        DiagramGeometry.expandCanvasIfNeeded(canvas, toContain: node)
     }
 
     private func handleCanvasTap(at point: CGPoint)
