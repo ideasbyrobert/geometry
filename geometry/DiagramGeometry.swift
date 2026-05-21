@@ -3,6 +3,13 @@ import Foundation
 
 enum DiagramGeometry
 {
+    struct SurfaceLayout: Equatable
+    {
+        let size: CGSize
+        let contentOffset: CGPoint
+        let centerMarker: CGPoint
+    }
+
     static let canvasExpansionMargin: CGFloat = 80
 
     static func node(with id: UUID, in canvas: DiagramCanvas) -> DiagramNode?
@@ -91,6 +98,88 @@ enum DiagramGeometry
         )
     }
 
+    static func contentRect(in canvas: DiagramCanvas) -> CGRect
+    {
+        let nodeRects = canvas.nodes.map(\.frame)
+        let waypointRects = canvas.edges.flatMap(\.waypoints).map
+        { point in
+            CGRect(origin: point, size: .zero)
+        }
+        let rects = nodeRects + waypointRects
+
+        guard let first = rects.first else
+        {
+            return CGRect(
+                x: CGFloat(canvas.width) / 2,
+                y: CGFloat(canvas.height) / 2,
+                width: 0,
+                height: 0
+            )
+        }
+
+        return rects.dropFirst().reduce(first) { $0.union($1) }
+    }
+
+    static func contentCenter(in canvas: DiagramCanvas) -> CGPoint
+    {
+        let rect = contentRect(in: canvas)
+        return CGPoint(x: rect.midX, y: rect.midY)
+    }
+
+    static func surfaceLayout(
+        canvasSize: CGSize,
+        viewportSize: CGSize,
+        zoom: CGFloat,
+        contentCenter: CGPoint
+    ) -> SurfaceLayout
+    {
+        let safeZoom = max(zoom, 0.001)
+        let viewportSize = CGSize(
+            width: viewportSize.width / safeZoom,
+            height: viewportSize.height / safeZoom
+        )
+        let leading = max(0, viewportSize.width / 2 - contentCenter.x)
+        let top = max(0, viewportSize.height / 2 - contentCenter.y)
+        let trailing = max(0, viewportSize.width / 2 - (canvasSize.width - contentCenter.x))
+        let bottom = max(0, viewportSize.height / 2 - (canvasSize.height - contentCenter.y))
+
+        return SurfaceLayout(
+            size: CGSize(
+                width: max(canvasSize.width + leading + trailing, viewportSize.width),
+                height: max(canvasSize.height + top + bottom, viewportSize.height)
+            ),
+            contentOffset: CGPoint(x: leading, y: top),
+            centerMarker: CGPoint(x: leading + contentCenter.x, y: top + contentCenter.y)
+        )
+    }
+
+    static func centeredScrollOffset(
+        surfaceSize: CGSize,
+        viewportSize: CGSize,
+        zoom: CGFloat,
+        centerMarker: CGPoint
+    ) -> CGPoint
+    {
+        let safeZoom = max(zoom, 0.001)
+        let renderedSurfaceSize = CGSize(
+            width: surfaceSize.width * safeZoom,
+            height: surfaceSize.height * safeZoom
+        )
+        let renderedCenter = CGPoint(
+            x: centerMarker.x * safeZoom,
+            y: centerMarker.y * safeZoom
+        )
+        let maximumOffset = CGPoint(
+            x: max(0, renderedSurfaceSize.width - viewportSize.width),
+            y: max(0, renderedSurfaceSize.height - viewportSize.height)
+        )
+
+        return CGPoint(
+            x: clamp(renderedCenter.x - viewportSize.width / 2, minimum: 0, maximum: maximumOffset.x),
+            y: clamp(renderedCenter.y - viewportSize.height / 2, minimum: 0, maximum: maximumOffset.y)
+        )
+    }
+
     static func expandCanvasIfNeeded(
         _ canvas: DiagramCanvas,
         toContain node: DiagramNode,
@@ -161,5 +250,10 @@ enum DiagramGeometry
         let dx = left.x - right.x
         let dy = left.y - right.y
         return dx * dx + dy * dy
+    }
+
+    private static func clamp(_ value: CGFloat, minimum: CGFloat, maximum: CGFloat) -> CGFloat
+    {
+        min(max(value, minimum), maximum)
     }
 }

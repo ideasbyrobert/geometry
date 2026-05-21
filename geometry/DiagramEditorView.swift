@@ -1,3 +1,4 @@
+import AppKit
 import Colors
 import Fonts
 import Spacing
@@ -65,6 +66,7 @@ private struct DiagramWorkspaceView: View
     @Binding var connectorStartID: UUID?
     @Binding var zoom: CGFloat
     @Binding var statusMessage: String
+    @State private var centeredCanvasID: UUID?
     let addNode: (DiagramPrimitiveKind, CGPoint?) -> Void
     let validateIssues: ([DiagramValidationIssue]) -> Void
 
@@ -75,23 +77,45 @@ private struct DiagramWorkspaceView: View
             GeometryReader
             { proxy in
                 let canvasSize = CGSize(width: CGFloat(canvas.width), height: CGFloat(canvas.height))
-                let surfaceSize = DiagramGeometry.visibleSurfaceSize(
+                let contentCenter = DiagramGeometry.contentCenter(in: canvas)
+                let layout = DiagramGeometry.surfaceLayout(
                     canvasSize: canvasSize,
                     viewportSize: proxy.size,
-                    zoom: zoom
+                    zoom: zoom,
+                    contentCenter: contentCenter
+                )
+                let targetScrollOffset = DiagramGeometry.centeredScrollOffset(
+                    surfaceSize: layout.size,
+                    viewportSize: proxy.size,
+                    zoom: zoom,
+                    centerMarker: layout.centerMarker
                 )
 
                 ScrollView([.horizontal, .vertical])
                 {
-                    diagramSurface(size: surfaceSize)
+                    diagramSurface(layout: layout, canvasSize: canvasSize)
+                        .overlay(alignment: .topLeading)
+                        {
+                            DiagramInitialScrollApplier(
+                                canvasID: canvas.id,
+                                targetOffset: targetScrollOffset,
+                                centeredCanvasID: $centeredCanvasID
+                            )
+                            .frame(width: 0, height: 0)
+                            .allowsHitTesting(false)
+                        }
                         .scaleEffect(zoom, anchor: .topLeading)
                         .frame(
-                            width: surfaceSize.width * zoom,
-                            height: surfaceSize.height * zoom,
+                            width: layout.size.width * zoom,
+                            height: layout.size.height * zoom,
                             alignment: .topLeading
                         )
                 }
                 .background(.white)
+                .onChange(of: canvas.id)
+                { _, _ in
+                    centeredCanvasID = nil
+                }
             }
 
             HStack(spacing: StackSpacing.standard)
@@ -128,7 +152,7 @@ private struct DiagramWorkspaceView: View
         }
     }
 
-    private func diagramSurface(size: CGSize) -> some View
+    private func diagramSurface(layout: DiagramGeometry.SurfaceLayout, canvasSize: CGSize) -> some View
     {
         ZStack(alignment: .topLeading)
         {
@@ -142,35 +166,40 @@ private struct DiagramWorkspaceView: View
                     SpatialTapGesture()
                         .onEnded
                         { value in
-                            handleCanvasTap(at: value.location)
+                            handleCanvasTap(at: value.location, contentOffset: layout.contentOffset)
                         }
                 )
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Diagram Workspace")
                 .accessibilityIdentifier(DiagramAccessibility.workspace)
 
-            DiagramEdgeLayer(canvas: canvas)
-                .allowsHitTesting(false)
+            ZStack(alignment: .topLeading)
+            {
+                DiagramEdgeLayer(canvas: canvas)
+                    .allowsHitTesting(false)
 
-            ForEach(sortedNodes)
-            { node in
-                DiagramNodeView(
-                    node: node,
-                    isSelected: selectedNodeID == node.id,
-                    isConnectorStart: connectorStartID == node.id,
-                    zoom: zoom,
-                    select: { handleNodeTap(node) },
-                    snapState: { commitNodePosition(node) }
+                ForEach(sortedNodes)
+                { node in
+                    DiagramNodeView(
+                        node: node,
+                        isSelected: selectedNodeID == node.id,
+                        isConnectorStart: connectorStartID == node.id,
+                        zoom: zoom,
+                        select: { handleNodeTap(node) },
+                        snapState: { commitNodePosition(node) }
+                    )
+                }
+
+                DiagramEdgeLabelsView(
+                    canvas: canvas,
+                    selectedEdgeID: $selectedEdgeID,
+                    selectedNodeID: $selectedNodeID
                 )
             }
-
-            DiagramEdgeLabelsView(
-                canvas: canvas,
-                selectedEdgeID: $selectedEdgeID,
-                selectedNodeID: $selectedNodeID
-            )
+            .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+            .offset(x: layout.contentOffset.x, y: layout.contentOffset.y)
         }
-        .frame(width: size.width, height: size.height, alignment: .topLeading)
+        .frame(width: layout.size.width, height: layout.size.height, alignment: .topLeading)
     }
 
     private var sortedNodes: [DiagramNode]
@@ -192,16 +221,33 @@ private struct DiagramWorkspaceView: View
         DiagramGeometry.expandCanvasIfNeeded(canvas, toContain: node)
     }
 
-    private func handleCanvasTap(at point: CGPoint)
+    private func handleCanvasTap(at point: CGPoint, contentOffset: CGPoint)
     {
+        let canvasPoint = CGPoint(
+            x: point.x - contentOffset.x,
+            y: point.y - contentOffset.y
+        )
+
         switch tool
         {
         case .entity:
-            addNode(.entity, point)
+            guard canvasPoint.x >= 0, canvasPoint.y >= 0 else
+            {
+                return
+            }
+            addNode(.entity, canvasPoint)
         case .state:
-            addNode(.state, point)
+            guard canvasPoint.x >= 0, canvasPoint.y >= 0 else
+            {
+                return
+            }
+            addNode(.state, canvasPoint)
         case .mechanism:
-            addNode(.mechanism, point)
+            guard canvasPoint.x >= 0, canvasPoint.y >= 0 else
+            {
+                return
+            }
+            addNode(.mechanism, canvasPoint)
         case .select:
             selectedNodeID = nil
             selectedEdgeID = nil
@@ -261,6 +307,108 @@ private struct DiagramWorkspaceView: View
         self.connectorStartID = nil
         statusMessage = "Connected \(source.title) -> \(node.title)."
         validateIssues([])
+    }
+}
+
+private struct DiagramInitialScrollApplier: NSViewRepresentable
+{
+    let canvasID: UUID
+    let targetOffset: CGPoint
+    @Binding var centeredCanvasID: UUID?
+
+    func makeNSView(context: Context) -> DiagramScrollProbeView
+    {
+        DiagramScrollProbeView()
+    }
+
+    func updateNSView(_ view: DiagramScrollProbeView, context: Context)
+    {
+        view.canvasID = canvasID
+        view.targetOffset = targetOffset
+        view.isCentered = { centeredCanvasID == canvasID }
+        view.markCentered = { centeredCanvasID = $0 }
+
+        guard centeredCanvasID != canvasID else
+        {
+            return
+        }
+
+        view.scheduleApply()
+    }
+}
+
+private final class DiagramScrollProbeView: NSView
+{
+    var canvasID: UUID?
+    var targetOffset = CGPoint.zero
+    var isCentered: (() -> Bool)?
+    var markCentered: ((UUID) -> Void)?
+    private var scheduledCanvasID: UUID?
+
+    func scheduleApply()
+    {
+        guard let canvasID else
+        {
+            return
+        }
+
+        scheduledCanvasID = canvasID
+        DispatchQueue.main.async
+        { [weak self] in
+            self?.applyWhenReady(attempt: 0)
+        }
+    }
+
+    private func applyWhenReady(attempt: Int)
+    {
+        guard let canvasID,
+              scheduledCanvasID == canvasID,
+              isCentered?() != true else
+        {
+            return
+        }
+
+        guard let scrollView = enclosingScrollView,
+              let documentView = scrollView.documentView else
+        {
+            retryIfNeeded(attempt: attempt)
+            return
+        }
+
+        let clipView = scrollView.contentView
+        let documentSize = documentView.bounds.size
+        let visibleSize = clipView.bounds.size
+        guard documentSize.width > 0,
+              documentSize.height > 0,
+              visibleSize.width > 0,
+              visibleSize.height > 0 else
+        {
+            retryIfNeeded(attempt: attempt)
+            return
+        }
+
+        let maximumX = max(0, documentSize.width - visibleSize.width)
+        let maximumY = max(0, documentSize.height - visibleSize.height)
+        let x = min(max(targetOffset.x, 0), maximumX)
+        let topBasedY = min(max(targetOffset.y, 0), maximumY)
+        let y = documentView.isFlipped ? topBasedY : maximumY - topBasedY
+
+        clipView.scroll(to: NSPoint(x: x, y: y))
+        scrollView.reflectScrolledClipView(clipView)
+        markCentered?(canvasID)
+    }
+
+    private func retryIfNeeded(attempt: Int)
+    {
+        guard attempt < 8 else
+        {
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02)
+        { [weak self] in
+            self?.applyWhenReady(attempt: attempt + 1)
+        }
     }
 }
 
