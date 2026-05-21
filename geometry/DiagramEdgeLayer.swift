@@ -6,11 +6,34 @@ import SwiftUI
 struct DiagramEdgeLayer: View
 {
     let canvas: DiagramCanvas
+    let selectedEdgeID: UUID?
+    let connectorStartID: UUID?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View
     {
+        if DiagramMotion.isEnabled(reduceMotion: reduceMotion)
+        {
+            TimelineView(.animation)
+            { timeline in
+                edgeCanvas(date: timeline.date)
+                    .drawingGroup()
+            }
+        }
+        else
+        {
+            edgeCanvas(date: nil)
+        }
+    }
+
+    private func edgeCanvas(date: Date?) -> some View
+    {
         Canvas
         { context, _ in
+            let animatedEdgeCount = animatedEdgeCount()
+            var animatedEdgeIndex = 0
+
             for edge in canvas.edges
             {
                 guard let source = DiagramGeometry.node(with: edge.sourceNodeID, in: canvas),
@@ -19,7 +42,7 @@ struct DiagramEdgeLayer: View
                     continue
                 }
 
-                let routePoints = routePoints(for: edge, source: source, target: target)
+                let routePoints = DiagramGeometry.edgeRoutePoints(for: edge, source: source, target: target)
                 let color = color(for: edge)
                 var path = Path()
                 guard let first = routePoints.first,
@@ -51,6 +74,25 @@ struct DiagramEdgeLayer: View
                     color: color,
                     context: &context
                 )
+
+                if let date,
+                   shouldAnimate(edge)
+                {
+                    let particleCount = DiagramMotion.particleCount(
+                        forAnimatedEdgeIndex: animatedEdgeIndex,
+                        animatedEdgeCount: animatedEdgeCount
+                    )
+                    animatedEdgeIndex += 1
+                    drawSignalParticles(
+                        edge: edge,
+                        source: source,
+                        target: target,
+                        routePoints: routePoints,
+                        date: date,
+                        particleCount: particleCount,
+                        context: &context
+                    )
+                }
             }
         }
     }
@@ -92,27 +134,134 @@ struct DiagramEdgeLayer: View
         }
     }
 
-    private func routePoints(
-        for edge: DiagramEdge,
-        source: DiagramNode,
-        target: DiagramNode
-    ) -> [CGPoint]
+    private func animatedEdgeCount() -> Int
     {
-        let waypoints = edge.waypoints
-        guard let firstWaypoint = waypoints.first,
-              let lastWaypoint = waypoints.last else
+        canvas.edges.reduce(0)
+        { count, edge in
+            guard DiagramGeometry.node(with: edge.sourceNodeID, in: canvas) != nil,
+                  DiagramGeometry.node(with: edge.targetNodeID, in: canvas) != nil,
+                  shouldAnimate(edge) else
+            {
+                return count
+            }
+
+            return count + 1
+        }
+    }
+
+    private func shouldAnimate(_ edge: DiagramEdge) -> Bool
+    {
+        DiagramMotion.shouldAnimateEdge(
+            role: edge.role,
+            isSelected: selectedEdgeID == edge.id,
+            isConnectorSource: connectorStartID == edge.sourceNodeID
+        )
+    }
+
+    private func drawSignalParticles(
+        edge: DiagramEdge,
+        source: DiagramNode,
+        target: DiagramNode,
+        routePoints: [CGPoint],
+        date: Date,
+        particleCount: Int,
+        context: inout GraphicsContext
+    )
+    {
+        guard particleCount > 0 else
         {
-            return [
-                DiagramGeometry.endpoint(from: source, to: target),
-                DiagramGeometry.endpoint(from: target, to: source)
-            ]
+            return
         }
 
-        return [
-            DiagramGeometry.endpoint(from: source, toward: firstWaypoint)
-        ] + waypoints + [
-            DiagramGeometry.endpoint(from: target, toward: lastWaypoint)
-        ]
+        let latencyClass = DiagramMotion.resolvedLatencyClass(
+            edge: edge,
+            source: source,
+            target: target
+        )
+        let speed = DiagramMotion.signalSpeed(for: latencyClass)
+        let seed = DiagramMotion.stableUnitInterval(for: edge.id)
+        let time = date.timeIntervalSinceReferenceDate
+
+        for index in 0 ..< particleCount
+        {
+            let spacing = Double(index) / Double(max(particleCount, 1))
+            let progress = (time * speed + seed + spacing)
+                .truncatingRemainder(dividingBy: 1)
+
+            guard let point = DiagramGeometry.point(
+                atProgress: CGFloat(progress),
+                along: routePoints
+            ) else
+            {
+                continue
+            }
+
+            drawParticle(
+                at: point,
+                radius: particleRadius(for: latencyClass),
+                color: particleColor(for: edge),
+                context: &context
+            )
+        }
+    }
+
+    private func drawParticle(
+        at point: CGPoint,
+        radius: CGFloat,
+        color: Color,
+        context: inout GraphicsContext
+    )
+    {
+        let glowRect = CGRect(
+            x: point.x - radius * 2.4,
+            y: point.y - radius * 2.4,
+            width: radius * 4.8,
+            height: radius * 4.8
+        )
+        let coreRect = CGRect(
+            x: point.x - radius,
+            y: point.y - radius,
+            width: radius * 2,
+            height: radius * 2
+        )
+
+        context.fill(Path(ellipseIn: glowRect), with: .color(color.opacity(0.12)))
+        context.fill(Path(ellipseIn: coreRect), with: .color(color.opacity(0.74)))
+    }
+
+    private func particleRadius(for latencyClass: String) -> CGFloat
+    {
+        switch latencyClass.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        {
+        case "ns":
+            return 2
+        case "us", "µs":
+            return 2.4
+        case "ms":
+            return 2.8
+        default:
+            return 2.2
+        }
+    }
+
+    private func particleColor(for edge: DiagramEdge) -> Color
+    {
+        if edge.validationSeverity == .error && !edge.validationMessage.isEmpty
+        {
+            return .red
+        }
+
+        switch edge.role
+        {
+        case .bridge:
+            return Color(red: 0.08, green: 0.29, blue: 0.62)
+        case .convergence:
+            return Color(red: 0.10, green: 0.36, blue: 0.28)
+        case .sourceSequence:
+            return Color(red: 0.16, green: 0.16, blue: 0.16)
+        case .causal, .lockedAnchor, .annotation:
+            return Color(red: 0.10, green: 0.24, blue: 0.48)
+        }
     }
 
     private func drawArrowhead(

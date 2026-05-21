@@ -222,6 +222,147 @@ enum DiagramGeometry
         canvas.height = Double(max(CGFloat(canvas.height), requiredHeight))
     }
 
+    static func resistedDragPosition(
+        for node: DiagramNode,
+        in canvas: DiagramCanvas,
+        dragOrigin: CGPoint,
+        translation: CGSize,
+        zoom: CGFloat
+    ) -> CGPoint
+    {
+        let safeZoom = max(zoom, 0.001)
+        let proposedCenter = CGPoint(
+            x: dragOrigin.x + translation.width / safeZoom,
+            y: dragOrigin.y + translation.height / safeZoom
+        )
+
+        guard node.kind == .state,
+              let attachedEntityID = node.attachedEntityID,
+              let entity = self.node(with: attachedEntityID, in: canvas),
+              entity.kind == .entity else
+        {
+            return proposedCenter
+        }
+
+        return resistedStatePosition(
+            proposedCenter: proposedCenter,
+            attachedEntityFrame: entity.frame
+        )
+    }
+
+    static func resistedStatePosition(
+        proposedCenter: CGPoint,
+        attachedEntityFrame: CGRect,
+        freeDistance: CGFloat = 30,
+        resistance: CGFloat = 0.38
+    ) -> CGPoint
+    {
+        let anchor = perimeterPoint(on: attachedEntityFrame, closestTo: proposedCenter)
+        let dx = proposedCenter.x - anchor.x
+        let dy = proposedCenter.y - anchor.y
+        let distance = sqrt(dx * dx + dy * dy)
+
+        guard distance > freeDistance else
+        {
+            return proposedCenter
+        }
+
+        let safeDistance = max(distance, 0.001)
+        let resistedDistance = freeDistance + (distance - freeDistance) * clamp(
+            resistance,
+            minimum: 0,
+            maximum: 1
+        )
+
+        return CGPoint(
+            x: anchor.x + dx / safeDistance * resistedDistance,
+            y: anchor.y + dy / safeDistance * resistedDistance
+        )
+    }
+
+    static func edgeRoutePoints(
+        for edge: DiagramEdge,
+        source: DiagramNode,
+        target: DiagramNode
+    ) -> [CGPoint]
+    {
+        let waypoints = edge.waypoints
+        guard let firstWaypoint = waypoints.first,
+              let lastWaypoint = waypoints.last else
+        {
+            return [
+                endpoint(from: source, to: target),
+                endpoint(from: target, to: source)
+            ]
+        }
+
+        return [
+            endpoint(from: source, toward: firstWaypoint)
+        ] + waypoints + [
+            endpoint(from: target, toward: lastWaypoint)
+        ]
+    }
+
+    static func routeLength(_ points: [CGPoint]) -> CGFloat
+    {
+        guard points.count > 1 else
+        {
+            return 0
+        }
+
+        return zip(points, points.dropFirst()).reduce(CGFloat.zero)
+        { total, segment in
+            total + distance(segment.0, segment.1)
+        }
+    }
+
+    static func point(
+        atProgress progress: CGFloat,
+        along points: [CGPoint]
+    ) -> CGPoint?
+    {
+        guard let first = points.first else
+        {
+            return nil
+        }
+
+        guard points.count > 1 else
+        {
+            return first
+        }
+
+        let totalLength = routeLength(points)
+        guard totalLength > 0 else
+        {
+            return first
+        }
+
+        let targetDistance = clamp(progress, minimum: 0, maximum: 1) * totalLength
+        var traveled = CGFloat.zero
+
+        for (start, end) in zip(points, points.dropFirst())
+        {
+            let segmentLength = distance(start, end)
+            guard segmentLength > 0 else
+            {
+                continue
+            }
+
+            if traveled + segmentLength >= targetDistance
+            {
+                let localProgress = (targetDistance - traveled) / segmentLength
+                return CGPoint(
+                    x: start.x + (end.x - start.x) * localProgress,
+                    y: start.y + (end.y - start.y) * localProgress
+                )
+            }
+
+            traveled += segmentLength
+        }
+
+        return points.last
+    }
+
     private static func perimeterPoint(on rect: CGRect, closestTo point: CGPoint) -> CGPoint
     {
         let center = CGPoint(x: rect.midX, y: rect.midY)
@@ -279,6 +420,11 @@ enum DiagramGeometry
         let dx = left.x - right.x
         let dy = left.y - right.y
         return dx * dx + dy * dy
+    }
+
+    private static func distance(_ left: CGPoint, _ right: CGPoint) -> CGFloat
+    {
+        sqrt(distanceSquared(left, right))
     }
 
     private static func clamp(_ value: CGFloat, minimum: CGFloat, maximum: CGFloat) -> CGFloat

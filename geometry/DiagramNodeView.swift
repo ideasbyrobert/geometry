@@ -11,7 +11,9 @@ struct DiagramNodeView: View
     let zoom: CGFloat
     let select: () -> Void
     let snapState: () -> Void
+    let dragPosition: (DiagramNode, CGPoint, CGSize, CGFloat) -> CGPoint
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dragOrigin: CGPoint?
 
     var body: some View
@@ -51,6 +53,13 @@ struct DiagramNodeView: View
 
     @ViewBuilder
     private var standardBody: some View
+    {
+        standardPrimitiveBody
+            .modifier(DiagramNodeSelectionMotion(isActive: isSelected || isConnectorStart))
+    }
+
+    @ViewBuilder
+    private var standardPrimitiveBody: some View
     {
         switch node.kind
         {
@@ -270,14 +279,135 @@ struct DiagramNodeView: View
                     return
                 }
 
-                node.x = Double(dragOrigin.x + value.translation.width / max(zoom, 0.001))
-                node.y = Double(dragOrigin.y + value.translation.height / max(zoom, 0.001))
+                let position = dragPosition(
+                    node,
+                    dragOrigin,
+                    value.translation,
+                    zoom
+                )
+                node.x = Double(position.x)
+                node.y = Double(position.y)
             }
             .onEnded
             { _ in
                 dragOrigin = nil
-                snapState()
+                guard DiagramMotion.isEnabled(reduceMotion: reduceMotion) else
+                {
+                    snapState()
+                    return
+                }
+
+                withAnimation(DiagramMotion.snapAnimation)
+                {
+                    snapState()
+                }
             }
+    }
+}
+
+private enum NodeSelectionPhase: CaseIterable
+{
+    case resting
+    case pop
+    case settle
+    case selected
+
+    static let activePhases: [NodeSelectionPhase] = [.resting, .pop, .settle, .selected]
+    static let inactivePhases: [NodeSelectionPhase] = [.resting]
+
+    var scale: CGFloat
+    {
+        switch self
+        {
+        case .resting:
+            return 1
+        case .pop:
+            return 1.045
+        case .settle:
+            return 0.992
+        case .selected:
+            return 1.014
+        }
+    }
+
+    var glowRadius: CGFloat
+    {
+        switch self
+        {
+        case .resting:
+            return 0
+        case .pop:
+            return 9
+        case .settle:
+            return 3
+        case .selected:
+            return 5
+        }
+    }
+
+    var glowOpacity: Double
+    {
+        switch self
+        {
+        case .resting:
+            return 0
+        case .pop:
+            return 0.2
+        case .settle:
+            return 0.08
+        case .selected:
+            return 0.13
+        }
+    }
+
+    var animation: Animation
+    {
+        switch self
+        {
+        case .resting:
+            return .easeOut(duration: 0.12)
+        case .pop:
+            return .spring(duration: 0.18, bounce: 0.18)
+        case .settle:
+            return .easeOut(duration: 0.1)
+        case .selected:
+            return .spring(duration: 0.24, bounce: 0.08)
+        }
+    }
+}
+
+private struct DiagramNodeSelectionMotion: ViewModifier
+{
+    let isActive: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @ViewBuilder
+    func body(content: Content) -> some View
+    {
+        if DiagramMotion.isEnabled(reduceMotion: reduceMotion)
+        {
+            let phases = isActive ? NodeSelectionPhase.activePhases : NodeSelectionPhase.inactivePhases
+            content
+                .phaseAnimator(phases, trigger: isActive)
+                { animatedContent, phase in
+                    animatedContent
+                        .scaleEffect(phase.scale)
+                        .shadow(
+                            color: Color.blue.opacity(phase.glowOpacity),
+                            radius: phase.glowRadius,
+                            x: 0,
+                            y: 0
+                        )
+                }
+                animation:
+                { phase in
+                    phase.animation
+                }
+        }
+        else
+        {
+            content
+        }
     }
 }
 

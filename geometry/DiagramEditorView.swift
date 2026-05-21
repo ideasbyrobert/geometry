@@ -67,6 +67,7 @@ private struct DiagramWorkspaceView: View
     @Binding var zoom: CGFloat
     @Binding var statusMessage: String
     @State private var centeredCanvasID: UUID?
+    @State private var statusEventID = 0
     let addNode: (DiagramPrimitiveKind, CGPoint?) -> Void
     let validateIssues: ([DiagramValidationIssue]) -> Void
 
@@ -133,12 +134,10 @@ private struct DiagramWorkspaceView: View
 
                 if !statusMessage.isEmpty
                 {
-                    Text(statusMessage)
-                        .fontRole(.metadata)
-                        .foregroundStyle(statusMessage.contains("Invalid") ? AnyShapeStyle(Color.red) : TextColors.secondary)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(statusMessage)
-                        .accessibilityIdentifier(DiagramAccessibility.validationSummary)
+                    DiagramStatusTelemetryView(
+                        message: statusMessage,
+                        eventID: statusEventID
+                    )
                 }
 
                 Text("\(Int(zoom * 100))%")
@@ -154,6 +153,16 @@ private struct DiagramWorkspaceView: View
                     .fill(.black.opacity(0.08))
                     .frame(height: 1)
             }
+        }
+        .onChange(of: statusMessage)
+        { oldValue, newValue in
+            guard !newValue.isEmpty,
+                  newValue != oldValue else
+            {
+                return
+            }
+
+            statusEventID += 1
         }
     }
 
@@ -193,7 +202,11 @@ private struct DiagramWorkspaceView: View
 
             ZStack(alignment: .topLeading)
             {
-                DiagramEdgeLayer(canvas: canvas)
+                DiagramEdgeLayer(
+                    canvas: canvas,
+                    selectedEdgeID: selectedEdgeID,
+                    connectorStartID: connectorStartID
+                )
                     .allowsHitTesting(false)
 
                 ForEach(sortedNodes)
@@ -204,7 +217,8 @@ private struct DiagramWorkspaceView: View
                         isConnectorStart: connectorStartID == node.id,
                         zoom: zoom,
                         select: { handleNodeTap(node) },
-                        snapState: { commitNodePosition(node) }
+                        snapState: { commitNodePosition(node) },
+                        dragPosition: resistedDragPosition
                     )
                 }
 
@@ -237,6 +251,22 @@ private struct DiagramWorkspaceView: View
     {
         DiagramGeometry.snapState(node, in: canvas)
         DiagramGeometry.expandCanvasIfNeeded(canvas, toContain: node)
+    }
+
+    private func resistedDragPosition(
+        node: DiagramNode,
+        dragOrigin: CGPoint,
+        translation: CGSize,
+        zoom: CGFloat
+    ) -> CGPoint
+    {
+        DiagramGeometry.resistedDragPosition(
+            for: node,
+            in: canvas,
+            dragOrigin: dragOrigin,
+            translation: translation,
+            zoom: zoom
+        )
     }
 
     private func handleCanvasTap(at point: CGPoint, contentOffset: CGPoint)
