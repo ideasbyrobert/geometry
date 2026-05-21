@@ -147,7 +147,7 @@ enum DiagramSeedData
     private static func completeWritePathCanvas() -> DiagramCanvas
     {
         let application = sourceFrame(
-            "Application Write",
+            "Main Memory",
             detail: "Data arrives from application via write().\nTransient Entity: User Data.\nMode: Linear",
             x: 336,
             y: 418,
@@ -156,7 +156,7 @@ enum DiagramSeedData
             badge: "x 3"
         )
         let dirtyPool = sourceFrame(
-            "Dirty Page Pool Enrollment",
+            "The Deposit",
             detail: "enrolled in the Dirty Page Pool",
             x: 334,
             y: 646,
@@ -164,7 +164,7 @@ enum DiagramSeedData
             height: 302
         )
         let dirtyRatio = sourceFrame(
-            "Dirty Ratio Trigger",
+            "The Writeback Daemon",
             detail: "Senses dirty ratio, triggers flush.\nResident Entity: Dirty Page Pool.\nMode: Cybernetic",
             x: 992,
             y: 253,
@@ -173,7 +173,7 @@ enum DiagramSeedData
             badge: "x 2"
         )
         let flushEmitter = sourceFrame(
-            "Flush Emitter",
+            "Flush Bridge",
             detail: "",
             x: 992,
             y: 855,
@@ -181,7 +181,7 @@ enum DiagramSeedData
             height: 560
         )
         let controller = sourceFrame(
-            "SSD Controller",
+            "The Flush Command",
             detail: "I/O request travels to SSD controller.\nTransient Entity: bio struct.\nMode: Linear",
             x: 964,
             y: 1162,
@@ -190,16 +190,16 @@ enum DiagramSeedData
             badge: "x 2"
         )
         let nand = sourceFrame(
-            "NAND Block Slot",
+            "The Block Cleaner",
             detail: "GC erases stale SSD blocks, makes clean.\nResident Entity: NAND Block Slot.\nMode: Cybernetic",
             x: 1447,
             y: 568,
             width: 342,
             height: 1136,
-            badge: "x 0"
+            badge: "x 6"
         )
         let reclaimEmitter = sourceFrame(
-            "Reclaim Emitter",
+            "Clean Blocks Bridge",
             detail: "",
             x: 1447,
             y: 1351,
@@ -207,7 +207,7 @@ enum DiagramSeedData
             height: 290
         )
         let convergence = sourceFrame(
-            "Convergence",
+            "The Consolidation",
             detail: "Two conditions must converge.\nThe flush command already extracted the data.\nTransient Entity: Our Data (finally moves).\nMode: Linear",
             x: 968,
             y: 1872,
@@ -369,6 +369,17 @@ enum DiagramSeedData
                         CGPoint(x: 1672, y: 1441),
                         CGPoint(x: 1672, y: 1780),
                         CGPoint(x: 1008, y: 1780)
+                    ]
+                ),
+                edge(
+                    inFlight,
+                    ftl,
+                    role: .convergence,
+                    label: "user data",
+                    waypoints: [
+                        CGPoint(x: 52, y: 756),
+                        CGPoint(x: 52, y: 1780),
+                        CGPoint(x: 930, y: 1780)
                     ]
                 ),
                 edge(ftl, merge, role: .sourceSequence),

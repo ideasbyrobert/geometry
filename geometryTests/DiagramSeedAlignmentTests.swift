@@ -59,7 +59,7 @@ final class DiagramSeedAlignmentTests: XCTestCase
 
         XCTAssertTrue(badges.contains("x 3"))
         XCTAssertEqual(badges.filter { $0 == "x 2" }.count, 2)
-        XCTAssertTrue(badges.contains("x 0"))
+        XCTAssertTrue(badges.contains("x 6"))
         XCTAssertNotNil(canvas.nodes.first { $0.title == "1000x slower" && $0.presentation == .sourceCallout })
         XCTAssertNotNil(canvas.nodes.first { $0.title == "electrons trapped in floating gates" && $0.presentation == .sourceCaption })
     }
@@ -89,6 +89,13 @@ final class DiagramSeedAlignmentTests: XCTestCase
         XCTAssertTrue(canvas.edges.contains { $0.role == .sourceSequence })
         XCTAssertTrue(canvas.edges.contains { $0.role == .bridge && !$0.waypoints.isEmpty })
         XCTAssertTrue(canvas.edges.contains { $0.role == .convergence && $0.waypoints.count >= 3 })
+
+        let inFlightNode = try XCTUnwrap(canvas.nodes.first { $0.title == "In-Flight" })
+        let ftlNode = try XCTUnwrap(canvas.nodes.first { $0.title == "FTL Lookup" })
+        XCTAssertTrue(
+            canvas.edges.contains { $0.sourceNodeID == inFlightNode.id && $0.targetNodeID == ftlNode.id && $0.role == .convergence },
+            "Missing In-Flight to FTL Lookup user data convergence edge"
+        )
     }
 
     private func completeWritePathCanvas() throws -> DiagramCanvas
