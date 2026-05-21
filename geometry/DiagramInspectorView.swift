@@ -270,7 +270,37 @@ private struct DiagramNodeInspectorView: View
                 }
             }
 
+            Picker(
+                "Presentation",
+                selection: Binding(
+                    get: { node.presentation },
+                    set: { node.presentation = $0 }
+                )
+            )
+            {
+                ForEach(DiagramNodePresentation.allCases)
+                { presentation in
+                    Text(presentation.title).tag(presentation)
+                }
+            }
+
             TextField("Latency Class", text: $node.latencyClass)
+            TextField("Badge", text: $node.badgeText, axis: .vertical)
+                .lineLimit(1...3)
+
+            Picker(
+                "Badge Tone",
+                selection: Binding(
+                    get: { node.badgeTone },
+                    set: { node.badgeTone = $0 }
+                )
+            )
+            {
+                ForEach(DiagramBadgeTone.allCases)
+                { tone in
+                    Text(tone.title).tag(tone)
+                }
+            }
 
             Stepper(value: $node.diamondCount, in: 0...10_000)
             {
@@ -315,6 +345,8 @@ private struct DiagramEdgeInspectorView: View
 
             TextField("Label", text: $edge.label)
             TextField("Latency Class", text: $edge.latencyClass)
+            TextField("Waypoints", text: $edge.waypointsRawValue, axis: .vertical)
+                .lineLimit(1...4)
             TextField("Notes", text: $edge.notes, axis: .vertical)
                 .lineLimit(2...6)
 

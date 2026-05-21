@@ -89,6 +89,13 @@ enum DiagramValidator
                     severity: .error,
                     message: "Convergence edges must target a downstream mechanism."
                 )
+        case .sourceSequence:
+            return source.kind == .mechanism && target.kind == .mechanism
+                ? nil
+                : DiagramValidationIssue(
+                    severity: .error,
+                    message: "Source sequence edges must connect mechanism -> mechanism."
+                )
         case .lockedAnchor, .annotation:
             return nil
         }
@@ -193,6 +200,14 @@ enum DiagramValidator
         canvas.nodes.compactMap
         { node in
             guard node.kind == .mechanism else
+            {
+                return nil
+            }
+
+            if canvas.edges.contains(where: { edge in
+                edge.role == .sourceSequence &&
+                (edge.sourceNodeID == node.id || edge.targetNodeID == node.id)
+            })
             {
                 return nil
             }

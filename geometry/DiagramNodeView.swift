@@ -32,6 +32,26 @@ struct DiagramNodeView: View
     @ViewBuilder
     private var nodeBody: some View
     {
+        switch node.presentation
+        {
+        case .standard:
+            standardBody
+        case .sourceFrame:
+            sourceFrameBody
+        case .sourceState:
+            sourceStateBody
+        case .sourceAnnotation:
+            sourceAnnotationBody
+        case .sourceCaption:
+            sourceCaptionBody
+        case .sourceCallout:
+            sourceCalloutBody
+        }
+    }
+
+    @ViewBuilder
+    private var standardBody: some View
+    {
         switch node.kind
         {
         case .entity:
@@ -131,6 +151,93 @@ struct DiagramNodeView: View
                         .offset(x: 30, y: -12)
                 }
             }
+    }
+
+    private var sourceFrameBody: some View
+    {
+        Rectangle()
+            .fill(.white.opacity(0.001))
+            .overlay(
+                Rectangle()
+                    .stroke(.black.opacity(isSelected ? 0.5 : 0.16), lineWidth: isSelected ? 2 : 1.4)
+            )
+            .overlay(alignment: .topLeading)
+            {
+                Text(node.detail.isEmpty ? node.title : node.detail)
+                    .fontRole(.metadata)
+                    .foregroundStyle(TextColors.secondary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(4)
+                    .padding(StackSpacing.standard)
+            }
+            .overlay(alignment: .topTrailing)
+            {
+                if !node.badgeText.isEmpty
+                {
+                    Text(node.badgeText)
+                        .fontRole(.smallIcon)
+                        .foregroundStyle(TextColors.secondary)
+                        .padding(StackSpacing.standard)
+                }
+            }
+    }
+
+    private var sourceStateBody: some View
+    {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(.white)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(borderColor.opacity(0.68), lineWidth: isSelected ? 2.4 : 1.4)
+            )
+            .overlay
+            {
+                Text(node.title)
+                    .fontRole(.code)
+                    .foregroundStyle(TextColors.primary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .padding(.horizontal, StackSpacing.standard)
+            }
+    }
+
+    private var sourceAnnotationBody: some View
+    {
+        Text(node.detail.isEmpty ? node.title : node.detail)
+            .fontRole(.metadata)
+            .foregroundStyle(TextColors.secondary)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private var sourceCaptionBody: some View
+    {
+        Text(node.title)
+            .fontRole(.metadata)
+            .foregroundStyle(TextColors.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+
+    private var sourceCalloutBody: some View
+    {
+        VStack(alignment: .leading, spacing: 1)
+        {
+            Text(node.title)
+                .fontRole(.smallIcon)
+                .foregroundStyle(Color.red)
+
+            if !node.detail.isEmpty
+            {
+                Text(node.detail)
+                    .fontRole(.smallIcon)
+                    .foregroundStyle(TextColors.secondary)
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var borderColor: Color

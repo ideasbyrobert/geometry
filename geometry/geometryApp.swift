@@ -14,9 +14,12 @@ struct geometryApp: App
             DiagramNode.self,
             DiagramEdge.self
         ])
+        let processInfo = ProcessInfo.processInfo
+        let isTestRun = processInfo.arguments.contains("--uitest-reset-store") ||
+            processInfo.environment["XCTestConfigurationFilePath"] != nil
         let configuration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: ProcessInfo.processInfo.arguments.contains("--uitest-reset-store")
+            isStoredInMemoryOnly: isTestRun
         )
 
         do

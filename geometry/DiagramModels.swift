@@ -115,6 +115,9 @@ final class DiagramNode
     var latencyClass: String
     var notes: String
     var diamondCount: Int
+    var presentationRawValue: String = DiagramNodePresentation.standard.rawValue
+    var badgeText: String = ""
+    var badgeToneRawValue: String = DiagramBadgeTone.neutral.rawValue
 
     init(
         id: UUID = UUID(),
@@ -128,7 +131,10 @@ final class DiagramNode
         attachedEntityID: UUID? = nil,
         latencyClass: String = "",
         notes: String = "",
-        diamondCount: Int = 0
+        diamondCount: Int = 0,
+        presentation: DiagramNodePresentation = .standard,
+        badgeText: String = "",
+        badgeTone: DiagramBadgeTone = .neutral
     )
     {
         self.id = id
@@ -143,6 +149,9 @@ final class DiagramNode
         self.latencyClass = latencyClass
         self.notes = notes
         self.diamondCount = diamondCount
+        self.presentationRawValue = presentation.rawValue
+        self.badgeText = badgeText
+        self.badgeToneRawValue = badgeTone.rawValue
     }
 
     var kind: DiagramPrimitiveKind
@@ -173,6 +182,30 @@ final class DiagramNode
     {
         CGPoint(x: CGFloat(x), y: CGFloat(y))
     }
+
+    var presentation: DiagramNodePresentation
+    {
+        get
+        {
+            DiagramNodePresentation(rawValue: presentationRawValue) ?? .standard
+        }
+        set
+        {
+            presentationRawValue = newValue.rawValue
+        }
+    }
+
+    var badgeTone: DiagramBadgeTone
+    {
+        get
+        {
+            DiagramBadgeTone(rawValue: badgeToneRawValue) ?? .neutral
+        }
+        set
+        {
+            badgeToneRawValue = newValue.rawValue
+        }
+    }
 }
 
 @Model
@@ -187,6 +220,7 @@ final class DiagramEdge
     var notes: String
     var validationSeverityRawValue: String
     var validationMessage: String
+    var waypointsRawValue: String = ""
 
     init(
         id: UUID = UUID(),
@@ -196,6 +230,7 @@ final class DiagramEdge
         label: String = "",
         latencyClass: String = "",
         notes: String = "",
+        waypoints: [CGPoint] = [],
         validationSeverity: ValidationSeverity = .info,
         validationMessage: String = ""
     )
@@ -209,6 +244,7 @@ final class DiagramEdge
         self.notes = notes
         self.validationSeverityRawValue = validationSeverity.rawValue
         self.validationMessage = validationMessage
+        self.waypointsRawValue = DiagramEdge.encodeWaypoints(waypoints)
     }
 
     var role: DiagramEdgeRole
@@ -233,6 +269,53 @@ final class DiagramEdge
         {
             validationSeverityRawValue = newValue.rawValue
         }
+    }
+
+    var waypoints: [CGPoint]
+    {
+        get
+        {
+            DiagramEdge.decodeWaypoints(waypointsRawValue)
+        }
+        set
+        {
+            waypointsRawValue = DiagramEdge.encodeWaypoints(newValue)
+        }
+    }
+
+    private static func encodeWaypoints(_ waypoints: [CGPoint]) -> String
+    {
+        waypoints
+            .map { "\(encodeNumber(Double($0.x))),\(encodeNumber(Double($0.y)))" }
+            .joined(separator: ";")
+    }
+
+    private static func decodeWaypoints(_ rawValue: String) -> [CGPoint]
+    {
+        rawValue
+            .split(separator: ";")
+            .compactMap
+            { pair in
+                let values = pair.split(separator: ",")
+                guard values.count == 2,
+                      let x = Double(values[0]),
+                      let y = Double(values[1]) else
+                {
+                    return nil
+                }
+
+                return CGPoint(x: x, y: y)
+            }
+    }
+
+    private static func encodeNumber(_ value: Double) -> String
+    {
+        if value.rounded() == value
+        {
+            return String(Int(value))
+        }
+
+        return String(format: "%.2f", value)
     }
 }
 

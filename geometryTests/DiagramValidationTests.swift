@@ -42,6 +42,17 @@ final class DiagramValidationTests: XCTestCase
         XCTAssertEqual(issue?.severity, .error)
     }
 
+    func testAllowsSourceSequenceOnlyBetweenMechanisms() throws
+    {
+        let source = DiagramNode(title: "A", kind: .mechanism, x: 100, y: 100)
+        let target = DiagramNode(title: "B", kind: .mechanism, x: 300, y: 100)
+        let state = DiagramNode(title: "State", kind: .state, x: 500, y: 100)
+
+        XCTAssertNil(DiagramValidator.validateConnection(source: source, target: target, role: .sourceSequence))
+        XCTAssertNotNil(DiagramValidator.validateConnection(source: source, target: state, role: .sourceSequence))
+        XCTAssertNotNil(DiagramValidator.validateConnection(source: source, target: target, role: .causal))
+    }
+
     func testRejectsDanglingEdges() throws
     {
         let canvas = makeLinearCanvas()
@@ -88,6 +99,14 @@ final class DiagramValidationTests: XCTestCase
 
         XCTAssertTrue(issues.contains { $0.edgeID == badBridge.id })
         XCTAssertTrue(issues.contains { $0.edgeID == lonelyConvergence.id })
+    }
+
+    func testCompleteWritePathSeedValidatesCleanly() throws
+    {
+        let document = DiagramSeedData.makeReferenceDocument()
+        let canvas = try XCTUnwrap(document.canvases.first { $0.title == "Complete Write Path" })
+
+        XCTAssertTrue(DiagramValidator.validate(canvas: canvas).isEmpty)
     }
 
     private func makeLinearCanvas() -> DiagramCanvas

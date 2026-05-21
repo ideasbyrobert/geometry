@@ -19,12 +19,20 @@ struct DiagramEdgeLayer: View
                     continue
                 }
 
-                let start = DiagramGeometry.endpoint(from: source, to: target)
-                let end = DiagramGeometry.endpoint(from: target, to: source)
+                let routePoints = routePoints(for: edge, source: source, target: target)
                 let color = color(for: edge)
                 var path = Path()
-                path.move(to: start)
-                path.addLine(to: end)
+                guard let first = routePoints.first,
+                      let last = routePoints.last else
+                {
+                    continue
+                }
+
+                path.move(to: first)
+                for point in routePoints.dropFirst()
+                {
+                    path.addLine(to: point)
+                }
 
                 context.stroke(
                     path,
@@ -38,8 +46,8 @@ struct DiagramEdgeLayer: View
                 )
 
                 drawArrowhead(
-                    from: start,
-                    to: end,
+                    from: routePoints.count > 1 ? routePoints[routePoints.count - 2] : first,
+                    to: last,
                     color: color,
                     context: &context
                 )
@@ -62,6 +70,8 @@ struct DiagramEdgeLayer: View
             return .black.opacity(0.62)
         case .convergence:
             return .black.opacity(0.9)
+        case .sourceSequence:
+            return .black.opacity(0.72)
         case .lockedAnchor:
             return .black.opacity(0.34)
         case .annotation:
@@ -77,9 +87,32 @@ struct DiagramEdgeLayer: View
             return [7, 5]
         case .lockedAnchor, .annotation:
             return [4, 4]
-        case .causal, .convergence:
+        case .causal, .convergence, .sourceSequence:
             return []
         }
+    }
+
+    private func routePoints(
+        for edge: DiagramEdge,
+        source: DiagramNode,
+        target: DiagramNode
+    ) -> [CGPoint]
+    {
+        let waypoints = edge.waypoints
+        guard let firstWaypoint = waypoints.first,
+              let lastWaypoint = waypoints.last else
+        {
+            return [
+                DiagramGeometry.endpoint(from: source, to: target),
+                DiagramGeometry.endpoint(from: target, to: source)
+            ]
+        }
+
+        return [
+            DiagramGeometry.endpoint(from: source, toward: firstWaypoint)
+        ] + waypoints + [
+            DiagramGeometry.endpoint(from: target, toward: lastWaypoint)
+        ]
     }
 
     private func drawArrowhead(
@@ -167,7 +200,7 @@ struct DiagramEdgeLabelsView: View
             return "[\(edge.latencyClass)]"
         }
 
-        guard edge.role != .causal else
+        guard edge.role != .causal && edge.role != .sourceSequence else
         {
             return nil
         }
@@ -183,9 +216,7 @@ struct DiagramEdgeLabelsView: View
             return nil
         }
 
-        return CGPoint(
-            x: (source.center.x + target.center.x) / 2,
-            y: (source.center.y + target.center.y) / 2
-        )
+        let route = [source.center] + edge.waypoints + [target.center]
+        return route[route.count / 2]
     }
 }

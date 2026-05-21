@@ -55,5 +55,19 @@ final class DiagramPersistenceTests: XCTestCase
         XCTAssertEqual(reloadedNode.x, canvas.nodes.first?.x)
         XCTAssertEqual(reloadedNode.y, canvas.nodes.first?.y)
         XCTAssertEqual(reloadedNode.kind, canvas.nodes.first?.kind)
+
+        let completeWritePath = try XCTUnwrap(reloaded[0].canvases.first { $0.title == "Complete Write Path" })
+        XCTAssertEqual(completeWritePath.width, 1682)
+        XCTAssertEqual(completeWritePath.height, 2311)
+
+        let sourceFrame = try XCTUnwrap(completeWritePath.nodes.first { $0.presentation == .sourceFrame && !$0.badgeText.isEmpty })
+        XCTAssertFalse(sourceFrame.detail.isEmpty)
+        XCTAssertFalse(sourceFrame.badgeText.isEmpty)
+        XCTAssertEqual(sourceFrame.badgeTone, .neutral)
+
+        let routedEdge = try XCTUnwrap(completeWritePath.edges.first { !$0.waypoints.isEmpty })
+        XCTAssertFalse(routedEdge.waypointsRawValue.isEmpty)
+        XCTAssertFalse(routedEdge.waypoints.isEmpty)
+        XCTAssertTrue([DiagramEdgeRole.bridge, .convergence].contains(routedEdge.role))
     }
 }

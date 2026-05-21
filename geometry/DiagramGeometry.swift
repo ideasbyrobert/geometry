@@ -37,14 +37,27 @@ enum DiagramGeometry
         to target: DiagramNode
     ) -> CGPoint
     {
+        endpoint(from: source, toward: target.center)
+    }
+
+    static func endpoint(
+        from source: DiagramNode,
+        toward point: CGPoint
+    ) -> CGPoint
+    {
         switch source.kind
         {
         case .entity:
-            return perimeterPoint(on: source.frame, closestTo: target.center)
+            return perimeterPoint(on: source.frame, closestTo: point)
         case .state:
-            return circlePoint(center: source.center, radius: CGFloat(source.width) / 2, toward: target.center)
+            if source.presentation == .sourceState
+            {
+                return perimeterPoint(on: source.frame, closestTo: point)
+            }
+
+            return circlePoint(center: source.center, radius: CGFloat(source.width) / 2, toward: point)
         case .mechanism:
-            return diamondPoint(center: source.center, size: source.frame.size, toward: target.center)
+            return diamondPoint(center: source.center, size: source.frame.size, toward: point)
         }
     }
 

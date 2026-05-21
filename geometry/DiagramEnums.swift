@@ -89,6 +89,7 @@ enum DiagramEdgeRole: String, CaseIterable, Codable, Identifiable
     case causal
     case bridge
     case convergence
+    case sourceSequence
     case lockedAnchor
     case annotation
 
@@ -107,10 +108,68 @@ enum DiagramEdgeRole: String, CaseIterable, Codable, Identifiable
             return "Bridge"
         case .convergence:
             return "Convergence"
+        case .sourceSequence:
+            return "Source Sequence"
         case .lockedAnchor:
             return "Locked Anchor"
         case .annotation:
             return "Annotation"
+        }
+    }
+}
+
+enum DiagramNodePresentation: String, CaseIterable, Codable, Identifiable
+{
+    case standard
+    case sourceFrame
+    case sourceState
+    case sourceAnnotation
+    case sourceCaption
+    case sourceCallout
+
+    var id: String
+    {
+        rawValue
+    }
+
+    var title: String
+    {
+        switch self
+        {
+        case .standard:
+            return "Standard"
+        case .sourceFrame:
+            return "Source Frame"
+        case .sourceState:
+            return "Source State"
+        case .sourceAnnotation:
+            return "Source Annotation"
+        case .sourceCaption:
+            return "Source Caption"
+        case .sourceCallout:
+            return "Source Callout"
+        }
+    }
+}
+
+enum DiagramBadgeTone: String, CaseIterable, Codable, Identifiable
+{
+    case neutral
+    case critical
+
+    var id: String
+    {
+        rawValue
+    }
+
+    var title: String
+    {
+        switch self
+        {
+        case .neutral:
+            return "Neutral"
+        case .critical:
+            return "Critical"
         }
     }
 }
