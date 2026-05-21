@@ -94,6 +94,7 @@ private struct DiagramWorkspaceView: View
                     zoom: viewportZoom,
                     centerMarker: layout.centerMarker
                 )
+                let shouldApplyInitialCentering = !ProcessInfo.processInfo.arguments.contains("--disable-initial-center")
 
                 ScrollView([.horizontal, .vertical])
                 {
@@ -104,6 +105,7 @@ private struct DiagramWorkspaceView: View
                                 canvasID: canvas.id,
                                 targetOffset: targetScrollOffset,
                                 targetZoom: initialZoom,
+                                isDisabled: !shouldApplyInitialCentering,
                                 zoom: $zoom,
                                 centeredCanvasID: $centeredCanvasID
                             )
@@ -363,6 +365,7 @@ private struct DiagramInitialScrollApplier: NSViewRepresentable
     let canvasID: UUID
     let targetOffset: CGPoint
     let targetZoom: CGFloat
+    let isDisabled: Bool
     @Binding var zoom: CGFloat
     @Binding var centeredCanvasID: UUID?
 
@@ -377,6 +380,23 @@ private struct DiagramInitialScrollApplier: NSViewRepresentable
         view.targetOffset = targetOffset
         view.isCentered = { centeredCanvasID == canvasID }
         view.markCentered = { centeredCanvasID = $0 }
+
+        if isDisabled
+        {
+            if centeredCanvasID != canvasID
+            {
+                DispatchQueue.main.async
+                {
+                    guard centeredCanvasID != canvasID else
+                    {
+                        return
+                    }
+
+                    centeredCanvasID = canvasID
+                }
+            }
+            return
+        }
 
         guard centeredCanvasID != canvasID else
         {

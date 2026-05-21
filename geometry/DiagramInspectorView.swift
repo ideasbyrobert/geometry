@@ -38,6 +38,7 @@ struct DiagramInspectorView: View
                 validationPanel
             }
             .padding(PanelPadding.card)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(SurfaceColors.window)
         .glassEffect(.regular, in: Rectangle())
@@ -106,6 +107,7 @@ struct DiagramInspectorView: View
 
                                 Spacer()
                             }
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                             .padding(.vertical, TagPadding.vertical)
                             .padding(.horizontal, TagPadding.horizontal)
                             .background(
@@ -114,6 +116,7 @@ struct DiagramInspectorView: View
                                     : AnyShapeStyle(Color.clear),
                                 in: RoundedRectangle(cornerRadius: CornerRadius.selection)
                             )
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -121,6 +124,7 @@ struct DiagramInspectorView: View
                 .accessibilityIdentifier(DiagramAccessibility.edgeList)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var validationPanel: some View

@@ -98,7 +98,7 @@ struct DiagramSidebarView: View
                                     .foregroundStyle(TextColors.secondary)
                                     .lineLimit(1)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                             .padding(StackSpacing.standard)
                             .background(
                                 selectedCanvasID == canvas.id
@@ -106,6 +106,7 @@ struct DiagramSidebarView: View
                                     : AnyShapeStyle(Color.clear),
                                 in: RoundedRectangle(cornerRadius: CornerRadius.selection)
                             )
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier(DiagramAccessibility.canvas(canvas.title))

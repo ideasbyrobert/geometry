@@ -21,10 +21,10 @@ final class GeometryEditorUITests: XCTestCase
         let app = launchApp()
 
         app.buttons["tool-connect"].click()
-        node("Ready", in: app).click()
-        node("Fetch", in: app).click()
-        node("Fetch", in: app).click()
-        node("Listening", in: app).click()
+        clickDiagramPoint(x: 430, y: 320, in: app)
+        clickDiagramPoint(x: 620, y: 320, in: app)
+        clickDiagramPoint(x: 620, y: 320, in: app)
+        clickDiagramPoint(x: 810, y: 320, in: app)
         app.buttons["validate-diagram"].click()
 
         XCTAssertTrue(validationStatus(containing: "No validation issues", in: app).waitForExistence(timeout: 3))
@@ -50,7 +50,8 @@ final class GeometryEditorUITests: XCTestCase
     {
         let app = launchApp()
 
-        node("Ready", in: app).click()
+        app.buttons["tool-mechanism"].click()
+        clickDiagramPoint(x: 600, y: 780, in: app)
         let titleField = app.textFields["node-title-field"]
         XCTAssertTrue(titleField.waitForExistence(timeout: 3))
 
@@ -66,11 +67,11 @@ final class GeometryEditorUITests: XCTestCase
         let app = launchApp()
 
         app.buttons["tool-entity"].click()
-        workspace(in: app).click()
+        clickDiagramPoint(x: 260, y: 780, in: app)
         app.buttons["tool-state"].click()
-        workspace(in: app).click()
+        clickDiagramPoint(x: 430, y: 780, in: app)
         app.buttons["tool-mechanism"].click()
-        workspace(in: app).click()
+        clickDiagramPoint(x: 600, y: 780, in: app)
 
         XCTAssertTrue(node("Entity", in: app).waitForExistence(timeout: 3))
         XCTAssertTrue(node("State", in: app).waitForExistence(timeout: 3))
@@ -87,6 +88,21 @@ final class GeometryEditorUITests: XCTestCase
         app.otherElements["diagram-workspace"]
     }
 
+    private func clickDiagramPoint(x: CGFloat, y: CGFloat, in app: XCUIApplication)
+    {
+        let workspace = workspace(in: app)
+        XCTAssertTrue(workspace.waitForExistence(timeout: 3))
+
+        let frame = workspace.frame
+        let coordinate = workspace.coordinate(
+            withNormalizedOffset: CGVector(
+                dx: x / max(frame.width, 1),
+                dy: y / max(frame.height, 1)
+            )
+        )
+        coordinate.click()
+    }
+
     private func validationStatus(containing text: String, in app: XCUIApplication) -> XCUIElement
     {
         app.descendants(matching: .any)
@@ -97,7 +113,12 @@ final class GeometryEditorUITests: XCTestCase
     private func launchApp() -> XCUIApplication
     {
         let app = XCUIApplication()
-        app.launchArguments = ["--uitest-reset-store", "--disable-initial-fit", "--disable-premium-motion"]
+        app.launchArguments = [
+            "--uitest-reset-store",
+            "--disable-initial-fit",
+            "--disable-initial-center",
+            "--disable-premium-motion"
+        ]
         app.launch()
         return app
     }
