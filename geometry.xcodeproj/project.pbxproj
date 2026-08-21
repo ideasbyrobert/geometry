@@ -208,9 +208,9 @@
 			mainGroup = 2513390D2FBEF3AD005D1ABF;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				25133A042FBF0000005D1ABF /* XCLocalSwiftPackageReference "../fonts" */,
-				25133A052FBF0000005D1ABF /* XCLocalSwiftPackageReference "../colors" */,
-				25133A062FBF0000005D1ABF /* XCLocalSwiftPackageReference "../spacing" */,
+				25133A042FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-fonts" */,
+				25133A052FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-colors" */,
+				25133A062FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-spacing" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 251339172FBEF3AD005D1ABF /* Products */;
@@ -581,35 +581,47 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		25133A042FBF0000005D1ABF /* XCLocalSwiftPackageReference "../fonts" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../fonts;
+/* Begin XCRemoteSwiftPackageReference section */
+		25133A042FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-fonts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ideasbyrobert/finite-search-fonts.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
 		};
-		25133A052FBF0000005D1ABF /* XCLocalSwiftPackageReference "../colors" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../colors;
+		25133A052FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-colors" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ideasbyrobert/finite-search-colors.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
 		};
-		25133A062FBF0000005D1ABF /* XCLocalSwiftPackageReference "../spacing" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../spacing;
+		25133A062FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-spacing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ideasbyrobert/finite-search-spacing.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		25133A072FBF0000005D1ABF /* Fonts */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 25133A042FBF0000005D1ABF /* XCLocalSwiftPackageReference "../fonts" */;
+			package = 25133A042FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-fonts" */;
 			productName = Fonts;
 		};
 		25133A082FBF0000005D1ABF /* Colors */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 25133A052FBF0000005D1ABF /* XCLocalSwiftPackageReference "../colors" */;
+			package = 25133A052FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-colors" */;
 			productName = Colors;
 		};
 		25133A092FBF0000005D1ABF /* Spacing */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 25133A062FBF0000005D1ABF /* XCLocalSwiftPackageReference "../spacing" */;
+			package = 25133A062FBF0000005D1ABF /* XCRemoteSwiftPackageReference "finite-search-spacing" */;
 			productName = Spacing;
 		};
 /* End XCSwiftPackageProductDependency section */

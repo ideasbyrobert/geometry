@@ -1,0 +1,33 @@
+{
+  "originHash" : "2d646ef7be561fbd6413990c63cbba794da8e3eb02560e3574b5b5f092ad4d40",
+  "pins" : [
+    {
+      "identity" : "finite-search-colors",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ideasbyrobert/finite-search-colors.git",
+      "state" : {
+        "revision" : "5a6656ce7d5a0dd3c55fd59401f843b07ca34eff",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "finite-search-fonts",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ideasbyrobert/finite-search-fonts.git",
+      "state" : {
+        "revision" : "744301c4cbdbcaf0b0dc7c4c2ff22ab65dd83cd6",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "finite-search-spacing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ideasbyrobert/finite-search-spacing.git",
+      "state" : {
+        "revision" : "fb143ebd6507237f090a3beb0d8703d16816e313",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

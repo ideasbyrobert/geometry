@@ -1,0 +1,8 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserdatad
+xcuserdata/
+.swiftpm/
+Packages/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/configuration/
